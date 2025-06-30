@@ -31,3 +31,33 @@ def get_concentrations(atoms, elements):
     concentrations = concentrations/float(len(atoms))
     
     return concentrations
+
+def get_coordination_numbers(atoms, shell_distances, tol=1e-3):
+    '''
+    Return the coordination numbers of the atoms object, where coordination shell distances are specified by shell_distances
+
+            Parameters:
+                    atoms (ASE atoms object): The atoms to consider
+                    shell_distances (list of floats): The distances for which to look
+
+            Returns:
+                    total_pairs (list of floats): List of numbers of atoms on each shell
+    '''
+    
+    # Get the distances between all atoms in the simulation cell, applying the minimum image convention
+    atoms_distances = atoms.get_all_distances(mic=True, vector=False)
+    
+    # Empty array for storing result
+    total_pairs = np.zeros(len(shell_distances))
+    
+    # Loop over all pairs and check if the distance matches
+    for i in range(len(atoms)):
+        for j in range(len(atoms)):
+            for k, dist in enumerate(shell_distances):
+                if np.fabs(dist - atoms_distances[i,j]) < tol:
+                    total_pairs[k] += 1
+    
+    # Divide by the number of atoms
+    total_pairs = total_pairs/len(atoms)
+    
+    return total_pairs
