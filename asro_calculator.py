@@ -75,20 +75,22 @@ def asro(atoms, elements, shell_distances, tol=1e-3):
                     total_pairs (list of floats): List of numbers of atoms on each shell
     '''
     
-    cell = atoms.get_cell()
-    
-    positions = atoms.get_positions()
-    
+    # Labels of atoms in the cell
     labels = atoms.get_chemical_symbols()
     
+    # Distances between atoms in the cell (minimum image convention applied)
     atoms_distances = atoms.get_all_distances(mic=True, vector=False)
 
+    # Get concentrations of elements in the cell
     concentrations = get_concentrations(atoms, elements)
     
-    coordination_numbers = get_coordination_numbers(atoms, shell_distances)
+    # Get coordination numbers of the lattice described by the Atoms object
+    coordination_numbers = get_coordination_numbers(atoms, shell_distances, tol)
     
+    # Empty array for storing results
     sum_radial_densities = np.zeros((len(shell_distances), len(elements), len(elements)))
     
+    # Loop over pairs of atoms and add to working radial density array
     for i in range(len(atoms)):
         el1 = elements.index(labels[i])
         for j in range(len(atoms)):
@@ -97,13 +99,17 @@ def asro(atoms, elements, shell_distances, tol=1e-3):
                 if np.fabs(dist - atoms_distances[i,j]) < tol:
                     sum_radial_densities[k, el1, el2] += 1
     
+    # Divide by the number of atoms and multiply by two (want to genuinely count both A-B and B-A pairs!)
     conditional_probabilities = sum_radial_densities/len(atoms)*2
     
+    # Convert to conditional probabilities
     for i in range(len(shell_distances)):
         conditional_probabilities[i] /= coordination_numbers[i]
     
+    # Empty array for Warren-Cowley ASRO parameters
     warren_cowleys = np.zeros((len(shell_distances), len(elements), len(elements)))
     
+    # Convert conditional probabilities to Warren-Cowley ASRO parameters
     for d in range(len(shell_distances)):
         for i, ci in enumerate(concentrations):
             for j, cj in enumerate(concentrations):
